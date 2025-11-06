@@ -8,7 +8,14 @@ import Features from "./pages/Features";
 import Notifications from "./pages/Notifications";
 import Guide from "./pages/Guide";
 import Folders from "./pages/Folders";
-import Contact from "./components/contact";
+import Contact from "./pages/contact";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminDocuments from "./pages/admin/AdminDocuments";
+import AdminReports from "./pages/admin/AdminReports";
+import AdminSettings from "./pages/admin/AdminSettings";
 // import Login from "./pages/Login"; // nếu có trang đăng nhập thì bật lại
 
 export default function App() {
@@ -21,6 +28,8 @@ export default function App() {
         <Route path="/guide" element={<Guide />} />
         <Route path="/features" element={<Features />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         {/* === Trang Dashboard (nội bộ) === */}
         <Route path="/dashboard" element={<Dashboard />} />
 
@@ -28,6 +37,12 @@ export default function App() {
         <Route path="/upload" element={<Upload />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/folders" element={<Folders />} />
+        {/* === Trang Admin === */}
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/documents" element={<AdminDocuments />} />
+        <Route path="/admin/reports" element={<AdminReports />} />
+        <Route path="/admin/settings" element={<AdminSettings />} />
       </Routes>
     </Router>
   );

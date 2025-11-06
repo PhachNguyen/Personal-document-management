@@ -1,6 +1,7 @@
 import { ShieldCheck, UploadCloud, BellRing, Layers, Search, FileText, Share2, Lock } from "lucide-react";
 import HeaderHome from "../components/HeaderHome";
 import { Link } from "react-router-dom";
+import Footer from "../components/Footer";
 
 export default function Features() {
     const coreFeatures = [
@@ -145,9 +146,7 @@ export default function Features() {
             </section>
 
             {/* === Footer === */}
-            <footer className="text-center py-8 text-sm text-gray-500 border-t border-gray-800 bg-gray-950">
-                © 2025 Personal Document Manager. Made with 💙 by Phách.
-            </footer>
+            <Footer />
         </div>
     );
 }
