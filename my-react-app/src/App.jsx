@@ -16,6 +16,8 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminDocuments from "./pages/admin/AdminDocuments";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminSettings from "./pages/admin/AdminSettings";
+import DocumentDetail from "./pages/DocumentDetail";
+import FolderDetail from "./pages/FolderDetail";
 // import Login from "./pages/Login"; // nếu có trang đăng nhập thì bật lại
 
 export default function App() {
@@ -32,10 +34,11 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         {/* === Trang Dashboard (nội bộ) === */}
         <Route path="/dashboard" element={<Dashboard />} />
-
+        <Route path="/documents/:id" element={<DocumentDetail />} />
         <Route path="/documents" element={<Documents />} />
         <Route path="/upload" element={<Upload />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/folders/:name" element={<FolderDetail />} />
         <Route path="/folders" element={<Folders />} />
         {/* === Trang Admin === */}
         <Route path="/admin" element={<AdminDashboard />} />

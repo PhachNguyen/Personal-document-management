@@ -1,7 +1,62 @@
-import { Link } from "react-router-dom";
-import { FileText, Mail, Lock, User, ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { FileText, Mail, Lock, User, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import authApi from "../api/authApi";
 
 export default function Register() {
+    const navigate = useNavigate();
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    const [formData, setFormData] = useState({
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+    });
+
+    // handle change input
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    // handle submit
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+            alert("Vui lòng điền đầy đủ thông tin!");
+            return;
+        }
+
+        if (formData.password.length < 6) {
+            alert("Mật khẩu phải có ít nhất 6 ký tự!");
+            return;
+        }
+
+        if (formData.password !== formData.confirmPassword) {
+            alert("Mật khẩu xác nhận không khớp!");
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const res = await authApi.register({
+                name: formData.name,
+                email: formData.email,
+                password: formData.password,
+            });
+
+            alert(res.data.message || "Đăng ký thành công!");
+            navigate("/login");
+        } catch (err) {
+            alert(err.response?.data?.message || "Đăng ký thất bại!");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen grid md:grid-cols-2">
             {/* === LEFT: Banner === */}
@@ -12,18 +67,20 @@ export default function Register() {
                 </div>
 
                 <h2 className="text-4xl font-extrabold leading-tight mb-6">
-                    Bắt đầu quản lý <span className="text-blue-400">giấy tờ cá nhân</span> của bạn ngay hôm nay
+                    Bắt đầu quản lý{" "}
+                    <span className="text-blue-400">giấy tờ cá nhân</span> của bạn ngay hôm nay
                 </h2>
 
                 <p className="text-gray-400 text-sm leading-relaxed mb-6">
-                    Tạo tài khoản để sử dụng hệ thống lưu trữ thông minh, giúp bạn quản lý tất cả tài liệu cá nhân an toàn và tiện lợi.
+                    Tạo tài khoản để sử dụng hệ thống lưu trữ thông minh, giúp bạn quản lý
+                    tất cả tài liệu cá nhân an toàn và tiện lợi.
                 </p>
 
                 <ul className="space-y-2 text-sm text-gray-300">
-                    <li>✅ Giao diện dễ dùng</li>
-                    <li>✅ Lưu trữ đám mây an toàn</li>
-                    <li>✅ Tự động nhắc hạn giấy tờ</li>
-                    <li>✅ Dễ dàng tìm kiếm & chia sẻ</li>
+                    <li>+ Giao diện dễ dùng</li>
+                    <li>+ Lưu trữ đám mây an toàn</li>
+                    <li>+ Tự động nhắc hạn giấy tờ</li>
+                    <li>+ Dễ dàng tìm kiếm & chia sẻ</li>
                 </ul>
             </div>
 
@@ -43,57 +100,101 @@ export default function Register() {
                         Đăng ký để bắt đầu quản lý giấy tờ cá nhân
                     </p>
 
-                    <form className="space-y-5">
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        {/* Họ và tên */}
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-gray-700">Họ và tên</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-700">
+                                Họ và tên
+                            </label>
                             <div className="relative">
                                 <User className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                                 <input
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
                                     type="text"
-                                    placeholder="Nguyễn Thế Phách"
+                                    placeholder="Họ và tên của bạn"
                                     className="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                                 />
                             </div>
                         </div>
 
+                        {/* Email */}
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-gray-700">Email</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-700">
+                                Email
+                            </label>
                             <div className="relative">
                                 <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                                 <input
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
                                     type="email"
-                                    placeholder="nhapemail@gmail.com"
+                                    placeholder="Nhập email của bạn"
                                     className="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                                 />
                             </div>
                         </div>
 
+                        {/* Mật khẩu */}
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-gray-700">Mật khẩu</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-700">
+                                Mật khẩu
+                            </label>
                             <div className="relative">
                                 <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                                 <input
-                                    type="password"
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    type={showPassword ? "text" : "password"}
                                     placeholder="••••••••"
-                                    className="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
+                                    className="w-full border border-gray-300 rounded-lg pl-9 pr-10 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                                >
+                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
                             </div>
                         </div>
 
+                        {/* Xác nhận mật khẩu */}
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-gray-700">Xác nhận mật khẩu</label>
-                            <input
-                                type="password"
-                                placeholder="••••••••"
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
-                            />
+                            <label className="block text-sm font-medium mb-1 text-gray-700">
+                                Xác nhận mật khẩu
+                            </label>
+                            <div className="relative">
+                                <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+                                <input
+                                    name="confirmPassword"
+                                    value={formData.confirmPassword}
+                                    onChange={handleChange}
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    placeholder="••••••••"
+                                    className="w-full border border-gray-300 rounded-lg pl-9 pr-10 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                                >
+                                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            </div>
                         </div>
 
+                        {/* Submit */}
                         <button
                             type="submit"
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition"
+                            disabled={loading}
+                            className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition ${loading ? "opacity-70 cursor-not-allowed" : ""
+                                }`}
                         >
-                            Đăng ký
+                            {loading ? "Đang đăng ký..." : "Đăng ký"}
                         </button>
                     </form>
 
