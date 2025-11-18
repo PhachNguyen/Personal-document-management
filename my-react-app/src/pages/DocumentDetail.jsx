@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+
 import {
   FileText,
   CalendarDays,
@@ -9,6 +10,7 @@ import {
   ArrowLeft,
   Download,
 } from "lucide-react";
+
 import documentApi from "../api/documentApi";
 
 export default function DocumentDetail() {
@@ -18,6 +20,7 @@ export default function DocumentDetail() {
   const [document, setDocument] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [fileType, setFileType] = useState("");
 
   useEffect(() => {
     const fetchDocument = async () => {
@@ -31,40 +34,140 @@ export default function DocumentDetail() {
         setLoading(false);
       }
     };
+
     fetchDocument();
   }, [id]);
 
-  const getDisplayUrl = (url, ipfsHash) => {
-    if (!url) return null;
-    if (url.startsWith("ipfs://"))
-      return `https://gateway.pinata.cloud/ipfs/${url.replace("ipfs://", "")}`;
-    return `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
+  // Convert IPFS → HTTP URL
+  const fileUrl = document?.ipfsHash
+    ? `https://gateway.pinata.cloud/ipfs/${document.ipfsHash}`
+    : null;
+
+  // ===== Detect MIME type from IPFS =====
+  useEffect(() => {
+    if (!fileUrl) return;
+
+    async function detectMime() {
+      try {
+        const res = await fetch(fileUrl, { method: "HEAD" });
+        const type = res.headers.get("Content-Type") || "";
+        setFileType(type);
+        console.log("📌 MIME TYPE:", type);
+      } catch (err) {
+        console.log("❌ Không xác định MIME:", err);
+      }
+    }
+
+    detectMime();
+  }, [fileUrl]);
+
+  // ===== PREVIEW LOGIC =====
+  const renderPreview = () => {
+    if (!fileUrl) {
+      return <p className="text-gray-500">Không có file để xem trước.</p>;
+    }
+
+    if (!fileType)
+      return <p className="text-gray-400">Đang xác định loại file...</p>;
+
+    // IMAGE
+    if (fileType.startsWith("image/")) {
+      return (
+        <img
+          src={fileUrl}
+          alt="preview"
+          className="max-w-full max-h-full object-contain"
+        />
+      );
+    }
+
+    // PDF
+    if (fileType === "application/pdf") {
+      return <iframe src={fileUrl} className="w-full h-full" />;
+    }
+
+    // VIDEO
+    if (fileType.startsWith("video/")) {
+      return (
+        <video controls className="max-h-full max-w-full rounded-lg">
+          <source src={fileUrl} type={fileType} />
+        </video>
+      );
+    }
+
+    // AUDIO
+    if (fileType.startsWith("audio/")) {
+      return (
+        <audio controls className="w-full">
+          <source src={fileUrl} type={fileType} />
+        </audio>
+      );
+    }
+
+    // TEXT / JSON
+    if (fileType.startsWith("text/") || fileType.includes("json")) {
+      return <iframe src={fileUrl} className="w-full h-full bg-white" />;
+    }
+
+    // OFFICE
+    if (
+      fileType.includes("word") ||
+      fileType.includes("excel") ||
+      fileType.includes("presentation")
+    ) {
+      return (
+        <div className="text-gray-300 text-center">
+          <p>Không thể xem trực tiếp loại file này.</p>
+          <a
+            href={fileUrl}
+            download
+            className="mt-3 inline-block bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg"
+          >
+            Tải xuống để xem
+          </a>
+        </div>
+      );
+    }
+
+    // ZIP/RAR/UNKNOWN
+    return (
+      <div className="text-gray-400 text-center">
+        <p>Không hỗ trợ xem trực tiếp loại file này.</p>
+        <a
+          href={fileUrl}
+          download
+          className="mt-3 inline-block bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg"
+        >
+          Tải xuống
+        </a>
+      </div>
+    );
   };
 
+  // ===== LOADING =====
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f172a] text-gray-200">
+      <div className="min-h-screen flex items-center justify-center bg-[#0f172a]">
         <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
       </div>
     );
   }
 
+  // ===== ERROR =====
   if (error || !document) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f172a] text-gray-200">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f172a] text-gray-300">
         <FileText className="w-10 h-10 mb-4 text-red-400" />
-        <p className="text-sm">{error || "Không tìm thấy tài liệu."}</p>
+        <p>{error || "Không tìm thấy tài liệu."}</p>
         <button
           onClick={() => navigate("/documents")}
-          className="mt-4 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm"
+          className="mt-4 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg"
         >
           Quay lại danh sách
         </button>
       </div>
     );
   }
-
-  const fileUrl = getDisplayUrl(document.fileUrl, document.ipfsHash);
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-gray-100 p-8">
@@ -75,7 +178,7 @@ export default function DocumentDetail() {
             onClick={() => navigate(-1)}
             className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-200" />
+            <ArrowLeft className="w-5 h-5" />
           </button>
 
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -98,23 +201,28 @@ export default function DocumentDetail() {
 
       {/* === CONTENT === */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        {/* === LEFT: INFO CARD === */}
+        {/* LEFT INFO */}
         <div className="bg-[#1e293b] rounded-xl p-6 border border-gray-700 shadow-lg">
-          <h2 className="text-lg font-semibold mb-4 text-white">
-            Thông tin tài liệu
-          </h2>
+          <h2 className="text-lg font-semibold mb-4">Thông tin tài liệu</h2>
 
           <ul className="space-y-4 text-sm text-gray-300">
             <li>
               <span className="text-gray-400">Tên tài liệu:</span>{" "}
               {document.title}
             </li>
+
             <li>
               <span className="text-gray-400">Thư mục:</span>{" "}
               {document.folder?.name}
             </li>
 
-            {/* STATUS */}
+            <li className="flex items-start gap-2">
+              <span className="text-gray-400">Mô tả:</span>
+              <span className="whitespace-pre-line">
+                {document.description || "Không có"}
+              </span>
+            </li>
+
             <li>
               <span className="text-gray-400">Trạng thái:</span>{" "}
               <span
@@ -145,13 +253,13 @@ export default function DocumentDetail() {
             </li>
           </ul>
 
-          {/* BUTTONS */}
-          <div className="mt-6 flex gap-3">
+          {/* DOWNLOAD BUTTON */}
+          <div className="mt-6">
             {fileUrl && (
               <a
                 href={fileUrl}
                 download
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm w-fit"
               >
                 <Download className="w-4 h-4" /> Tải xuống
               </a>
@@ -159,30 +267,12 @@ export default function DocumentDetail() {
           </div>
         </div>
 
-        {/* === RIGHT: PREVIEW === */}
+        {/* RIGHT PREVIEW */}
         <div className="bg-[#1e293b] rounded-xl p-6 border border-gray-700 shadow-lg">
-          <h2 className="text-lg font-semibold mb-4 text-white">
-            Xem trước tài liệu
-          </h2>
+          <h2 className="text-lg font-semibold mb-4">Xem trước tài liệu</h2>
 
           <div className="w-full h-[480px] bg-gray-900 rounded-lg border border-gray-700 flex items-center justify-center overflow-hidden">
-            {!fileUrl ? (
-              <p className="text-gray-500 text-sm">
-                Không có file để xem trước.
-              </p>
-            ) : /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl) ? (
-              <img
-                src={fileUrl}
-                alt=""
-                className="max-h-full max-w-full object-contain"
-              />
-            ) : /\.(pdf)$/i.test(fileUrl) ? (
-              <iframe src={fileUrl} className="w-full h-full"></iframe>
-            ) : (
-              <p className="text-gray-500 text-sm">
-                Không hỗ trợ loại file này.
-              </p>
-            )}
+            {renderPreview()}
           </div>
         </div>
       </div>

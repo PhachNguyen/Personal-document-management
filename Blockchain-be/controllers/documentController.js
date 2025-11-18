@@ -1,97 +1,142 @@
 import Document from "../models/Document.js";
+import Folder from "../models/Folder.js";
 import { uploadToPinata } from "../utils/pinata.js";
 import FormData from "form-data";
 
-// ✅ 1. Tải lên tài liệu mới
+// =============================
+// 1. Upload tài liệu
+// =============================
 export const uploadDocument = async (req, res) => {
-    try {
-        const file = req.file;
-        const { title, folder } = req.body;
+  try {
+    const file = req.file;
+    const { title, folderId } = req.body;
 
-        if (!file) return res.status(400).json({ message: "Chưa chọn file!" });
+    if (!file) return res.status(400).json({ message: "Chưa chọn file!" });
+    if (!title) return res.status(400).json({ message: "Thiếu tiêu đề!" });
+    if (!folderId) return res.status(400).json({ message: "Thiếu folderId!" });
 
-        const formData = new FormData();
-        formData.append("file", file.buffer, file.originalname);
+    const folder = await Folder.findById(folderId);
+    if (!folder)
+      return res.status(404).json({ message: "Không tìm thấy thư mục!" });
 
-        const { ipfsHash, fileUrl } = await uploadToPinata(formData);
+    const formData = new FormData();
+    formData.append("file", file.buffer, file.originalname);
 
-        const newDoc = await Document.create({
-            title,
-            folder,
-            status: "Đã tải lên",
-            ipfsHash,
-            fileUrl,
-            owner: req.user.id, // 🔹 từ middleware JWT
-        });
+    const { ipfsHash, fileUrl } = await uploadToPinata(formData);
 
-        res.status(201).json({
-            message: "Tải lên thành công",
-            document: newDoc,
-        });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+    const newDoc = await Document.create({
+      title,
+      folder: folder._id,
+      ipfsHash,
+      fileUrl,
+      owner: req.user.id,
+    });
+
+    return res.status(201).json({
+      message: "Tải lên thành công",
+      ipfsHash,
+      fileUrl,
+      document: newDoc,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
 };
 
-// ✅ 2. Lấy tất cả tài liệu (Admin có thể xem toàn bộ)
+// =============================
+// 2. Lấy tất cả tài liệu của user
+// =============================
 export const getAllDocuments = async (req, res) => {
-    try {
-        const docs = await Document.find({ owner: req.user.id }).sort({ createdAt: -1 });
-        res.json(docs);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+  try {
+    const docs = await Document.find({ owner: req.user.id })
+      .populate("folder")
+      .sort({ createdAt: -1 });
+
+    res.json(docs);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
-// ✅ 3. Lấy chi tiết 1 tài liệu theo ID
+// =============================
+// 3. Lấy tài liệu theo folder
+// =============================
+export const getDocumentsByFolder = async (req, res) => {
+  try {
+    const { folderId } = req.params;
+
+    const docs = await Document.find({
+      folder: folderId,
+      owner: req.user.id,
+    })
+      .populate("folder")
+      .sort({ createdAt: -1 });
+
+    res.json(docs);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// =============================
+// 4. Lấy chi tiết tài liệu
+// =============================
 export const getDocumentById = async (req, res) => {
-    try {
-        const doc = await Document.findById(req.params.id);
-        if (!doc) return res.status(404).json({ message: "Không tìm thấy tài liệu" });
+  try {
+    const doc = await Document.findById(req.params.id).populate("folder");
 
-        // chỉ cho phép owner xem
-        if (doc.owner.toString() !== req.user.id)
-            return res.status(403).json({ message: "Không có quyền truy cập" });
+    if (!doc)
+      return res.status(404).json({ message: "Không tìm thấy tài liệu!" });
+    if (doc.owner.toString() !== req.user.id)
+      return res.status(403).json({ message: "Không có quyền truy cập!" });
 
-        res.json(doc);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+    res.json(doc);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
-// ✅ 4. Cập nhật thông tin tài liệu
+// =============================
+// 5. Cập nhật tài liệu
+// =============================
 export const updateDocument = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const updates = req.body;
+  try {
+    const { id } = req.params;
 
-        const doc = await Document.findById(id);
-        if (!doc) return res.status(404).json({ message: "Không tìm thấy tài liệu" });
+    const doc = await Document.findById(id);
+    if (!doc) return res.status(404).json({ message: "Không tìm thấy!" });
 
-        if (doc.owner.toString() !== req.user.id)
-            return res.status(403).json({ message: "Không có quyền cập nhật" });
+    if (doc.owner.toString() !== req.user.id)
+      return res.status(403).json({ message: "Không có quyền sửa!" });
 
-        Object.assign(doc, updates);
-        await doc.save();
+    const updated = await Document.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
 
-        res.json({ message: "Cập nhật thành công", document: doc });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+    res.json({ message: "Cập nhật thành công!", updated });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
-// ✅ 5. Xóa tài liệu
+// =============================
+// 6. XÓA tài liệu
+// =============================
 export const deleteDocument = async (req, res) => {
-    try {
-        const doc = await Document.findById(req.params.id);
-        if (!doc) return res.status(404).json({ message: "Không tìm thấy tài liệu" });
+  try {
+    const { id } = req.params;
 
-        if (doc.owner.toString() !== req.user.id)
-            return res.status(403).json({ message: "Không có quyền xóa" });
+    const doc = await Document.findById(id);
+    if (!doc)
+      return res.status(404).json({ message: "Không tìm thấy tài liệu!" });
 
-        await doc.deleteOne();
-        res.json({ message: "Đã xóa tài liệu thành công" });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+    if (doc.owner.toString() !== req.user.id)
+      return res.status(403).json({ message: "Không có quyền xoá!" });
+
+    await Document.findByIdAndDelete(id);
+
+    res.json({ message: "Xóa tài liệu thành công!" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };

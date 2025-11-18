@@ -27,22 +27,22 @@ export default function AdminUsers() {
   const users = [
     {
       id: 1,
-      name: "Nguyễn Văn A",
-      email: "a.nguyen@example.com",
+      name: "Nguyễn Thế Phách",
+      email: "Phách@example.com",
       role: "Người dùng",
       status: "Hoạt động",
     },
     {
       id: 2,
-      name: "Trần Thị B",
-      email: "b.tran@example.com",
+      name: "Nguyễn Thế Phách",
+      email: "Test@example.com",
       role: "Người dùng",
       status: "Đã khóa",
     },
     {
       id: 3,
-      name: "Phạm Minh C",
-      email: "minh.c@example.com",
+      name: "Nguyễn Thế Phách",
+      email: "admin@example.com",
       role: "Quản trị viên",
       status: "Hoạt động",
     },
@@ -83,7 +83,7 @@ export default function AdminUsers() {
       !currentAccount ||
       currentAccount.toLowerCase() !== adminWallet.toLowerCase()
     ) {
-      return toast.error("❌ Bạn không phải admin!");
+      return toast.error(" Bạn không phải admin!");
     }
 
     toast.info("⏳ Chờ xác nhận giao dịch trong MetaMask...");
@@ -117,16 +117,16 @@ export default function AdminUsers() {
       <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 mb-8">
         <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-2">
           <Wallet className="w-5 h-5 text-green-600" />
-          Số dư hợp đồng (Smart Contract)
+          Ví điện tử
         </h3>
 
         <p className="text-gray-600 text-sm">Số dư hiện tại:</p>
         <p className="text-4xl font-bold text-green-600 mt-1">
-          {loadingBalance ? "Loading..." : balance + " ETH"}
+          {loadingBalance ? "Loading..." : balance + " B"}
         </p>
 
         <p className="text-gray-400 text-xs mt-1">
-          (Tiền người dùng mua lượt upload)
+          (Tiền người dùng mua token upload)
         </p>
 
         <button

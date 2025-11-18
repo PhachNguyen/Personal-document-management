@@ -23,7 +23,7 @@ import FolderDetail from "./pages/FolderDetail";
 export default function App() {
   return (
     <Router>
-      {/* 👉 Toaster để ở đây (ngoài Routes) */}
+      {/*  Toaster để ở đây (ngoài Routes) */}
       <Toaster position="bottom-right" richColors closeButton />
 
       <Routes>
