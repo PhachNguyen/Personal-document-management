@@ -1,15 +1,22 @@
-import { Home, Folder, Star, FilePlus, Settings, Bell, Plus } from "lucide-react";
+import {
+    Home,
+    Folder,
+    Star,
+    FilePlus,
+    Settings,
+    Bell,
+    Plus,
+    Trash2,
+    Loader2,
+} from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import folderApi from "../api/folderApi.js"; // ✅ sử dụng API thật
 
 export default function Sidebar() {
     const { pathname } = useLocation();
-    const [folders, setFolders] = useState([
-        "Dự án Keitoto",
-        "Design System Journal",
-        "Marketing Mạng Xã Hội",
-        "Kiểm thử khả dụng",
-    ]);
+    const [folders, setFolders] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [newFolder, setNewFolder] = useState("");
 
@@ -20,11 +27,44 @@ export default function Sidebar() {
         { icon: Star, label: "Yêu thích", path: "#" },
     ];
 
-    const handleAddFolder = () => {
-        if (newFolder.trim() === "") return;
-        setFolders([...folders, newFolder.trim()]);
-        setNewFolder("");
-        setShowModal(false);
+    // 🟢 Lấy danh sách thư mục từ BE
+    const fetchFolders = async () => {
+        try {
+            const res = await folderApi.getAll();
+            setFolders(res.data);
+        } catch (err) {
+            console.error("❌ Lỗi tải thư mục:", err.response?.data || err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchFolders();
+    }, []);
+
+    // 🟢 Tạo thư mục mới
+    const handleAddFolder = async () => {
+        if (!newFolder.trim()) return;
+        try {
+            const res = await folderApi.create({ name: newFolder.trim() });
+            setFolders((prev) => [...prev, res.data]); // thêm vào danh sách
+            setNewFolder("");
+            setShowModal(false);
+        } catch (err) {
+            alert(err.response?.data?.message || "Lỗi khi tạo thư mục!");
+        }
+    };
+
+    // 🗑 Xóa thư mục
+    const handleDeleteFolder = async (id) => {
+        if (!confirm("Bạn có chắc chắn muốn xóa thư mục này không?")) return;
+        try {
+            await folderApi.delete(id);
+            setFolders((prev) => prev.filter((f) => f._id !== id));
+        } catch (err) {
+            alert(err.response?.data?.message || "Không thể xóa thư mục!");
+        }
     };
 
     return (
@@ -71,19 +111,36 @@ export default function Sidebar() {
                         </button>
                     </div>
 
-                    <ul className="space-y-2 text-sm text-gray-700">
-                        {folders.map((name, i) => (
-                            <li key={i}>
-                                <Link
-                                    to={`/folders/${encodeURIComponent(name)}`}
-                                    className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-50 hover:text-blue-600 transition"
+                    {loading ? (
+                        <div className="flex items-center justify-center text-gray-400 text-sm py-3">
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" /> Đang tải...
+                        </div>
+                    ) : folders.length > 0 ? (
+                        <ul className="space-y-2 text-sm text-gray-700">
+                            {folders.map((folder) => (
+                                <li
+                                    key={folder._id}
+                                    className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-gray-50 transition group"
                                 >
-                                    <Folder className="w-4 h-4 text-gray-400" />
-                                    <span className="truncate">{name}</span>
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
+                                    <Link
+                                        to={`/folders/${folder._id}`}
+                                        className="flex items-center gap-2 text-gray-700 group-hover:text-blue-600"
+                                    >
+                                        <Folder className="w-4 h-4 text-gray-400" />
+                                        <span className="truncate">{folder.name}</span>
+                                    </Link>
+                                    <button
+                                        onClick={() => handleDeleteFolder(folder._id)}
+                                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-gray-400 text-sm px-3">Chưa có thư mục nào.</p>
+                    )}
                 </div>
             </div>
 

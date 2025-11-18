@@ -1,5 +1,6 @@
-
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Toaster } from "sonner";
+
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Documents from "./pages/Documents";
@@ -18,21 +19,23 @@ import AdminReports from "./pages/admin/AdminReports";
 import AdminSettings from "./pages/admin/AdminSettings";
 import DocumentDetail from "./pages/DocumentDetail";
 import FolderDetail from "./pages/FolderDetail";
-// import Login from "./pages/Login"; // nếu có trang đăng nhập thì bật lại
 
 export default function App() {
   return (
     <Router>
+      {/* 👉 Toaster để ở đây (ngoài Routes) */}
+      <Toaster position="bottom-right" richColors closeButton />
+
       <Routes>
         {/* === Trang Public === */}
         <Route path="/" element={<Home />} />
-        {/* <Route path="/login" element={<Login />} /> */}
         <Route path="/guide" element={<Guide />} />
         <Route path="/features" element={<Features />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        {/* === Trang Dashboard (nội bộ) === */}
+
+        {/* === Dashboard === */}
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/documents/:id" element={<DocumentDetail />} />
         <Route path="/documents" element={<Documents />} />
@@ -40,7 +43,8 @@ export default function App() {
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/folders/:name" element={<FolderDetail />} />
         <Route path="/folders" element={<Folders />} />
-        {/* === Trang Admin === */}
+
+        {/* === Admin === */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/documents" element={<AdminDocuments />} />
