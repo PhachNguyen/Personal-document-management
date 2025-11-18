@@ -9,7 +9,7 @@ import FormData from "form-data";
 export const uploadDocument = async (req, res) => {
   try {
     const file = req.file;
-    const { title, folderId } = req.body;
+    const { title, folderId, description } = req.body;
 
     if (!file) return res.status(400).json({ message: "Chưa chọn file!" });
     if (!title) return res.status(400).json({ message: "Thiếu tiêu đề!" });
@@ -26,9 +26,11 @@ export const uploadDocument = async (req, res) => {
 
     const newDoc = await Document.create({
       title,
+      description,
       folder: folder._id,
       ipfsHash,
       fileUrl,
+      status: "Chờ duyệt",
       owner: req.user.id,
     });
 
@@ -136,6 +138,24 @@ export const deleteDocument = async (req, res) => {
     await Document.findByIdAndDelete(id);
 
     res.json({ message: "Xóa tài liệu thành công!" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+export const adminUpdateStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const doc = await Document.findById(id);
+    if (!doc)
+      return res.status(404).json({ message: "Không tìm thấy tài liệu!" });
+
+    doc.status = status;
+    doc.updatedAt = new Date();
+    await doc.save();
+
+    res.json({ message: "Cập nhật trạng thái thành công!", document: doc });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
